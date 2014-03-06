@@ -3,7 +3,7 @@
  * http://lab.hakim.se/reveal-js
  * MIT licensed
  *
- * Copyright (C) 2013 Hakim El Hattab, http://hakim.se
+ * Copyright (C) 2014 Hakim El Hattab, http://hakim.se
  */
 var Reveal = (function(){
 
@@ -242,17 +242,42 @@ var Reveal = (function(){
 
 	}
 
-	/**
-	 * Loads the dependencies of reveal.js. Dependencies are
-	 * defined via the configuration option 'dependencies'
-	 * and will be loaded prior to starting/binding reveal.js.
-	 * Some dependencies may have an 'async' flag, if so they
-	 * will load after reveal.js has been started up.
-	 */
+
+    /**
+     * Loads the dependencies of reveal.js. Dependencies are
+     * defined via the configuration option 'dependencies'
+     * and will be loaded prior to starting/binding reveal.js.
+     * Some dependencies may have an 'async' flag, if so they
+     * will load after reveal.js has been started up.
+     */
 	function load() {
 
 		var scripts = [],
-			scriptsAsync = [];
+			scriptsAsync = [],
+			scriptsToPreload = 0;
+
+		// Called once synchronous scripts finish loading
+		function proceed() {
+			if( scriptsAsync.length ) {
+				// Load asynchronous scripts
+				head.js.apply( null, scriptsAsync );
+			}
+
+			start();
+		}
+
+		function loadScript( s ) {
+			head.ready( s.src.match( /([\w\d_\-]*)\.?js$|[^\\\/]*$/i )[0], function() {
+				// Extension may contain callback functions
+				if( typeof s.callback === 'function' ) {
+					s.callback.apply( this );
+				}
+
+				if( --scriptsToPreload === 0 ) {
+					proceed();
+				}
+			});
+		}
 
 		for( var i = 0, len = config.dependencies.length; i < len; i++ ) {
 			var s = config.dependencies[i];
@@ -266,25 +291,12 @@ var Reveal = (function(){
 					scripts.push( s.src );
 				}
 
-				// Extension may contain callback functions
-				if( typeof s.callback === 'function' ) {
-					head.ready( s.src.match( /([\w\d_\-]*)\.?js$|[^\\\/]*$/i )[0], s.callback );
-				}
+				loadScript( s );
 			}
-		}
-
-		// Called once synchronous scripts finish loading
-		function proceed() {
-			if( scriptsAsync.length ) {
-				// Load asynchronous scripts
-				head.js.apply( null, scriptsAsync );
-			}
-
-			start();
 		}
 
 		if( scripts.length ) {
-			head.ready( proceed );
+			scriptsToPreload = scripts.length;
 
 			// Load synchronous scripts
 			head.js.apply( null, scripts );
@@ -304,8 +316,8 @@ var Reveal = (function(){
 		// Make sure we've got all the DOM elements we need
 		setupDOM();
 
-		// Decorate the slide DOM elements with state classes (past/future)
-		formatSlides();
+		// Resets all vertical slides so that only the first is visible
+		resetVerticalSlides();
 
 		// Updates the presentation to match the current configuration values
 		configure();
@@ -579,7 +591,13 @@ var Reveal = (function(){
 			enablePreviewLinks( '[data-preview-link]' );
 		}
 
-		// Auto-slide playback controls
+		// Remove existing auto-slide controls
+		if( autoSlidePlayer ) {
+			autoSlidePlayer.destroy();
+			autoSlidePlayer = null;
+		}
+
+		// Generate auto-slide controls if needed
 		if( numberOfSlides > 1 && config.autoSlide && config.autoSlideStoppable && features.canvas && features.requestAnimationFrame ) {
 			autoSlidePlayer = new Playback( dom.wrapper, function() {
 				return Math.min( Math.max( ( Date.now() - autoSlideStartTime ) / autoSlide, 0 ), 1 );
@@ -587,10 +605,6 @@ var Reveal = (function(){
 
 			autoSlidePlayer.on( 'click', onAutoSlidePlayerClick );
 			autoSlidePaused = false;
-		}
-		else if( autoSlidePlayer ) {
-			autoSlidePlayer.destroy();
-			autoSlidePlayer = null;
 		}
 
 		// Load the theme in the config, if it's not already loaded
@@ -625,7 +639,14 @@ var Reveal = (function(){
 			dom.wrapper.addEventListener( 'touchend', onTouchEnd, false );
 
 			// Support pointer-style touch interaction as well
-			if( window.navigator.msPointerEnabled ) {
+			if( window.navigator.pointerEnabled ) {
+				// IE 11 uses un-prefixed version of pointer events
+				dom.wrapper.addEventListener( 'pointerdown', onPointerDown, false );
+				dom.wrapper.addEventListener( 'pointermove', onPointerMove, false );
+				dom.wrapper.addEventListener( 'pointerup', onPointerUp, false );
+			}
+			else if( window.navigator.msPointerEnabled ) {
+				// IE 10 uses prefixed version of pointer events
 				dom.wrapper.addEventListener( 'MSPointerDown', onPointerDown, false );
 				dom.wrapper.addEventListener( 'MSPointerMove', onPointerMove, false );
 				dom.wrapper.addEventListener( 'MSPointerUp', onPointerUp, false );
@@ -684,7 +705,14 @@ var Reveal = (function(){
 		dom.wrapper.removeEventListener( 'touchmove', onTouchMove, false );
 		dom.wrapper.removeEventListener( 'touchend', onTouchEnd, false );
 
-		if( window.navigator.msPointerEnabled ) {
+		// IE11
+		if( window.navigator.pointerEnabled ) {
+			dom.wrapper.removeEventListener( 'pointerdown', onPointerDown, false );
+			dom.wrapper.removeEventListener( 'pointermove', onPointerMove, false );
+			dom.wrapper.removeEventListener( 'pointerup', onPointerUp, false );
+		}
+		// IE10
+		else if( window.navigator.msPointerEnabled ) {
 			dom.wrapper.removeEventListener( 'MSPointerDown', onPointerDown, false );
 			dom.wrapper.removeEventListener( 'MSPointerMove', onPointerMove, false );
 			dom.wrapper.removeEventListener( 'MSPointerUp', onPointerUp, false );
@@ -885,7 +913,7 @@ var Reveal = (function(){
 	function enableRollingLinks() {
 
 		if( features.transforms3d && !( 'msPerspective' in document.body.style ) ) {
-			var anchors = document.querySelectorAll( SLIDES_SELECTOR + ' a:not(.image)' );
+			var anchors = document.querySelectorAll( SLIDES_SELECTOR + ' a' );
 
 			for( var i = 0, len = anchors.length; i < len; i++ ) {
 				var anchor = anchors[i];
@@ -1402,13 +1430,13 @@ var Reveal = (function(){
 	/**
 	 * Toggles the paused mode on and off.
 	 */
-	function togglePause() {
+	function togglePause( override ) {
 
-		if( isPaused() ) {
-			resume();
+		if( typeof override === 'boolean' ) {
+			override ? pause() : resume();
 		}
 		else {
-			pause();
+			isPaused() ? resume() : pause();
 		}
 
 	}
@@ -1419,6 +1447,34 @@ var Reveal = (function(){
 	function isPaused() {
 
 		return dom.wrapper.classList.contains( 'paused' );
+
+	}
+
+	/**
+	 * Toggles the auto slide mode on and off.
+	 *
+	 * @param {Boolean} override Optional flag which sets the desired state. 
+	 * True means autoplay starts, false means it stops.
+	 */
+
+	function toggleAutoSlide( override ) {
+
+		if( typeof override === 'boolean' ) {
+			override ? resumeAutoSlide() : pauseAutoSlide();
+		}
+
+		else {
+			autoSlidePaused ? resumeAutoSlide() : pauseAutoSlide();
+		}
+
+	}
+
+	/**
+	 * Checks if the auto slide mode is currently on.
+	 */
+	function isAutoSliding() {
+
+		return !!( autoSlide && !autoSlidePaused );
 
 	}
 
@@ -1591,7 +1647,7 @@ var Reveal = (function(){
 		// Re-create the slide backgrounds
 		createBackgrounds();
 
-		formatSlides();
+		sortAllFragments();
 
 		updateControls();
 		updateProgress();
@@ -1601,10 +1657,10 @@ var Reveal = (function(){
 	}
 
 	/**
-	 * Iterates through and decorates slides DOM elements with
-	 * appropriate classes.
+	 * Resets all vertical slides so that only the first
+	 * is visible.
 	 */
-	function formatSlides() {
+	function resetVerticalSlides() {
 
 		var horizontalSlides = toArray( document.querySelectorAll( HORIZONTAL_SLIDES_SELECTOR ) );
 		horizontalSlides.forEach( function( horizontalSlide ) {
@@ -1612,7 +1668,29 @@ var Reveal = (function(){
 			var verticalSlides = toArray( horizontalSlide.querySelectorAll( 'section' ) );
 			verticalSlides.forEach( function( verticalSlide, y ) {
 
-				if( y > 0 ) verticalSlide.classList.add( 'future' );
+				if( y > 0 ) {
+					verticalSlide.classList.remove( 'present' );
+					verticalSlide.classList.remove( 'past' );
+					verticalSlide.classList.add( 'future' );
+				}
+
+			} );
+
+		} );
+
+	}
+
+	/**
+	 * Sorts and formats all of fragments in the
+	 * presentation.
+	 */
+	function sortAllFragments() {
+
+		var horizontalSlides = toArray( document.querySelectorAll( HORIZONTAL_SLIDES_SELECTOR ) );
+		horizontalSlides.forEach( function( horizontalSlide ) {
+
+			var verticalSlides = toArray( horizontalSlide.querySelectorAll( 'section' ) );
+			verticalSlides.forEach( function( verticalSlide, y ) {
 
 				sortFragments( verticalSlide.querySelectorAll( '.fragment' ) );
 
@@ -1998,7 +2076,7 @@ var Reveal = (function(){
 
 			var slideHeight = dom.background.offsetHeight;
 			var verticalSlideCount = verticalSlides.length;
-			var verticalOffset = verticalSlideCount > 0 ? -( backgroundHeight - slideHeight ) / ( verticalSlideCount-1 ) * indexv : 0;
+			var verticalOffset = verticalSlideCount > 1 ? -( backgroundHeight - slideHeight ) / ( verticalSlideCount-1 ) * indexv : 0;
 
 			dom.background.style.backgroundPosition = horizontalOffset + 'px ' + verticalOffset + 'px';
 
@@ -2248,6 +2326,40 @@ var Reveal = (function(){
 	}
 
 	/**
+	 * Retrieves the current state of the presentation as
+	 * an object. This state can then be restored at any
+	 * time.
+	 */
+	function getState() {
+
+		var indices = getIndices();
+
+		return {
+			indexh: indices.h,
+			indexv: indices.v,
+			indexf: indices.f,
+			paused: isPaused(),
+			overview: isOverview()
+		};
+
+	}
+
+	/**
+	 * Restores the presentation to the given state.
+	 *
+	 * @param {Object} state As generated by getState()
+	 */
+	function setState( state ) {
+
+		if( typeof state === 'object' ) {
+			slide( state.indexh, state.indexv, state.indexf );
+			togglePause( state.paused );
+			toggleOverview( state.overview );
+		}
+
+	}
+
+	/**
 	 * Return a sorted fragments list, ordered by an increasing
 	 * "data-fragment-index" attribute.
 	 *
@@ -2425,14 +2537,21 @@ var Reveal = (function(){
 
 		if( currentSlide ) {
 
+			var currentFragment = currentSlide.querySelector( '.current-fragment' );
+
+			var fragmentAutoSlide = currentFragment ? currentFragment.getAttribute( 'data-autoslide' ) : null;
 			var parentAutoSlide = currentSlide.parentNode ? currentSlide.parentNode.getAttribute( 'data-autoslide' ) : null;
 			var slideAutoSlide = currentSlide.getAttribute( 'data-autoslide' );
 
 			// Pick value in the following priority order:
-			// 1. Current slide's data-autoslide
-			// 2. Parent slide's data-autoslide
-			// 3. Global autoSlide setting
-			if( slideAutoSlide ) {
+			// 1. Current fragment's data-autoslide
+			// 2. Current slide's data-autoslide
+			// 3. Parent slide's data-autoslide
+			// 4. Global autoSlide setting
+			if( fragmentAutoSlide ) {
+				autoSlide = parseInt( fragmentAutoSlide, 10 );
+			}
+			else if( slideAutoSlide ) {
 				autoSlide = parseInt( slideAutoSlide, 10 );
 			}
 			else if( parentAutoSlide ) {
@@ -2441,6 +2560,17 @@ var Reveal = (function(){
 			else {
 				autoSlide = config.autoSlide;
 			}
+
+			// If there are media elements with data-autoplay,
+			// automatically set the autoSlide duration to the
+			// length of that media
+			toArray( currentSlide.querySelectorAll( 'video, audio' ) ).forEach( function( el ) {
+				if( el.hasAttribute( 'data-autoplay' ) ) {
+					if( autoSlide && el.duration * 1000 > autoSlide ) {
+						autoSlide = ( el.duration * 1000 ) + 1000;
+					}
+				}
+			} );
 
 			// Cue the next auto-slide if:
 			// - There is an autoSlide value
@@ -2474,6 +2604,7 @@ var Reveal = (function(){
 	function pauseAutoSlide() {
 
 		autoSlidePaused = true;
+		dispatchEvent( 'autoslidepaused' );
 		clearTimeout( autoSlideTimeout );
 
 		if( autoSlidePlayer ) {
@@ -2485,6 +2616,7 @@ var Reveal = (function(){
 	function resumeAutoSlide() {
 
 		autoSlidePaused = false;
+		dispatchEvent( 'autoslideresumed' );
 		cueAutoSlide();
 
 	}
@@ -2602,6 +2734,9 @@ var Reveal = (function(){
 	 */
 	function onDocumentKeyDown( event ) {
 
+		// Remember if auto-sliding was paused so we can toggle it
+		var autoSlideWasPaused = autoSlidePaused;
+
 		onUserInput( event );
 
 		// Check if there's a focused element that could be using
@@ -2678,6 +2813,8 @@ var Reveal = (function(){
 				case 66: case 190: case 191: togglePause(); break;
 				// f
 				case 70: enterFullscreen(); break;
+				// a
+				case 65: if ( config.autoSlideStoppable ) toggleAutoSlide( autoSlideWasPaused ); break;
 				default:
 					triggered = false;
 			}
@@ -2832,7 +2969,7 @@ var Reveal = (function(){
 	 */
 	function onPointerDown( event ) {
 
-		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH ) {
+		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH || event.pointerType === "touch" ) {
 			event.touches = [{ clientX: event.clientX, clientY: event.clientY }];
 			onTouchStart( event );
 		}
@@ -2844,7 +2981,7 @@ var Reveal = (function(){
 	 */
 	function onPointerMove( event ) {
 
-		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH ) {
+		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH || event.pointerType === "touch" )  {
 			event.touches = [{ clientX: event.clientX, clientY: event.clientY }];
 			onTouchMove( event );
 		}
@@ -2856,7 +2993,7 @@ var Reveal = (function(){
 	 */
 	function onPointerUp( event ) {
 
-		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH ) {
+		if( event.pointerType === event.MSPOINTER_TYPE_TOUCH || event.pointerType === "touch" )  {
 			event.touches = [{ clientX: event.clientX, clientY: event.clientY }];
 			onTouchEnd( event );
 		}
@@ -3230,13 +3367,21 @@ var Reveal = (function(){
 		// Toggles the "black screen" mode on/off
 		togglePause: togglePause,
 
+		// Toggles the auto slide mode on/off
+		toggleAutoSlide: toggleAutoSlide,
+
 		// State checks
 		isOverview: isOverview,
 		isPaused: isPaused,
+		isAutoSliding: isAutoSliding,
 
 		// Adds or removes all internal event listeners (such as keyboard)
 		addEventListeners: addEventListeners,
 		removeEventListeners: removeEventListeners,
+
+		// Facility for persisting and restoring the presentation state
+		getState: getState,
+		setState: setState,
 
 		// Returns the indices of the current, or specified, slide
 		getIndices: getIndices,
@@ -3277,17 +3422,20 @@ var Reveal = (function(){
 		getQueryHash: function() {
 			var query = {};
 
-			location.search.replace( /[A-Z0-9]+?=(\w*)/gi, function(a) {
+			location.search.replace( /[A-Z0-9]+?=([\w\.%-]*)/gi, function(a) {
 				query[ a.split( '=' ).shift() ] = a.split( '=' ).pop();
 			} );
 
 			// Basic deserialization
 			for( var i in query ) {
 				var value = query[ i ];
+
+				query[ i ] = unescape( value );
+
 				if( value === 'null' ) query[ i ] = null;
 				else if( value === 'true' ) query[ i ] = true;
 				else if( value === 'false' ) query[ i ] = false;
-				else if( !isNaN( parseFloat( value ) ) ) query[ i ] = parseFloat( value );
+				else if( value.match( /^\d+$/ ) ) query[ i ] = parseFloat( value );
 			}
 
 			return query;
