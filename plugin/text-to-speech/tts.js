@@ -34,20 +34,23 @@
 */
 
 
-// var thisScript = document.currentScript;
-// var scriptSource = thisScript.src;
+    /* stores location of this script, should work on more browsers,
+       but may req debug if several scripts are loading in parallel */
+
+// var scriptSource = (function(scripts) {
+//     var scripts = document.getElementsByTagName('script'),
+//         script = scripts[scripts.length - 1];
+
+//     if (script.getAttribute.length !== undefined) {
+//         return script.src
+//     }
+
+//     return script.getAttribute('src', -1)
+// }());
+
+var thisScript = document.currentScript;
+var scriptSource = thisScript.src;
     /* stores location of this script, but only works in Chrome, FF, Opera */
-
-var scriptSource = (function(scripts) {
-    var scripts = document.getElementsByTagName('script'),
-        script = scripts[scripts.length - 1];
-
-    if (script.getAttribute.length !== undefined) {
-        return script.src
-    }
-
-    return script.getAttribute('src', -1)
-}());
 
 // var presentPath = scriptSource.substring(0, scriptSource.length - 6);
     /* removes 6 chars (filename 'tts.js') to give site-specific path */
@@ -56,8 +59,6 @@ var presentPath = scriptSource.substring(0, scriptSource.lastIndexOf("/") + 1);
     /* general trim of script name from src path, keeps the slash */
 
 function loadScript(url, callback) {
- 
-
 
     var script = document.createElement('script')
     script.type = 'text/javascript';
@@ -77,13 +78,13 @@ function loadScript(url, callback) {
         };
     }
 
-    script.src = url;
+    script.src = presentPath + url;
     document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 
 //sound manager used for any browser that doesn't support HTML 5 audio tag
-loadScript(presentPath + 'soundmanager2-jsmin.js', function () {
+loadScript('soundmanager2-jsmin.js', function () {
     //initialise soundManager
     soundManager.setup({
         url: '/',
@@ -94,7 +95,7 @@ loadScript(presentPath + 'soundmanager2-jsmin.js', function () {
     });
 });
 
-loadScript(presentPath + 'google-tts.js', function () {
+loadScript('google-tts.js', function () {
     Reveal.addEventListener('slidechanged', function (event) {
         nextindexh = event.indexh;
         var sentence = document.getElementsByTagName('section')[nextindexh].getAttribute('text-to-speech');
