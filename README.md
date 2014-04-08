@@ -59,8 +59,8 @@ When used locally, this feature requires that reveal.js [runs from a local web s
 ```html
 <section data-markdown="example.md"  
          data-separator="^\n\n\n"  
-         data-vertical="^\n\n"  
-         data-notes="^Note:"  
+         data-separator-vertical="^\n\n"  
+         data-separator-notes="^Note:"  
          data-charset="iso-8859-15">
 </section>
 ```
@@ -86,7 +86,7 @@ Special syntax (in html comment) is available for adding attributes to the slide
 <section data-markdown>
 	<script type="text/template">
 	<!-- .slide: data-background="#ff0000" -->
-		Mardown content
+		Markdown content
 	</script>
 </section>
 ```
@@ -266,14 +266,19 @@ Reveal.configure({
   autoSlide: 5000
 });
 ```
+When this is turned on a control element will appear that enables users to pause and resume auto-sliding. Alternatively, sliding can be paused or resumed by pressing »a« on the keyboard. Sliding is paused automatically as soon as the user starts navigating. You can disable these controls by specifying ```autoSlideStoppable: false``` in your reveal.js config.
 
-When this is turned on a control element will appear that enables users to pause and resume auto-sliding. Sliding is also paused automatically as soon as the user starts navigating. You can disable these controls by specifying ```autoSlideStoppable: false``` in your reveal.js config.
-
-You can also override the slide duration for individual slides by using the ```data-autoslide``` attribute on individual sections:
+You can also override the slide duration for individual slides and fragments by using the ```data-autoslide``` attribute:
 
 ```html
-<section data-autoslide="10000">This will remain on screen for 10 seconds</section>
+<section data-autoslide="2000">
+	<p>After 2 seconds the first fragment will be shown.</p>
+	<p class="fragment" data-autoslide="10000">After 10 seconds the next fragment will be shown.</p>
+	<p class="fragment">Now, the fragment is displayed for 2 seconds before the next slide is shown.</p>
+</section>
 ```
+
+Whenever the auto-slide mode is resumed or paused the ```autoslideresumed``` and ```autoslidepaused``` events are fired.
 
 
 ### Keyboard Bindings
@@ -308,6 +313,7 @@ Reveal.prevFragment();
 Reveal.nextFragment();
 Reveal.toggleOverview();
 Reveal.togglePause();
+Reveal.toggleAutoSlide();
 
 // Retrieves the previous and current slide elements
 Reveal.getPreviousSlide();
@@ -320,6 +326,7 @@ Reveal.isFirstSlide();
 Reveal.isLastSlide();
 Reveal.isOverview();
 Reveal.isPaused();
+Reveal.isAutoSliding();
 ```
 
 ### Ready Event
@@ -614,7 +621,7 @@ When used locally, this feature requires that reveal.js [runs from a local web s
 If you're using the external Markdown plugin, you can add notes with the help of a special delimiter:
 
 ```html
-<section data-markdown="example.md" data-separator="^\n\n\n" data-vertical="^\n\n" data-notes="^Note:"></section>
+<section data-markdown="example.md" data-separator="^\n\n\n" data-separator-vertical="^\n\n" data-separator-notes="^Note:"></section>
 
 # Title
 ## Sub-title
@@ -683,7 +690,7 @@ Reveal.initialize({
 
 	// Don't forget to add the dependencies
 	dependencies: [
-		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.10/socket.io.min.js', async: true },
+		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js', async: true },
 		{ src: 'plugin/multiplex/master.js', async: true },
 
 		// and if you want speaker notes
@@ -711,7 +718,7 @@ Reveal.initialize({
 
 	// Don't forget to add the dependencies
 	dependencies: [
-		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.10/socket.io.min.js', async: true },
+		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js', async: true },
 		{ src: 'plugin/multiplex/client.js', async: true }
 
 		// other dependencies...
@@ -749,7 +756,7 @@ Reveal.initialize({
 
 	// Don't forget to add the dependencies
 	dependencies: [
-		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.10/socket.io.min.js', async: true },
+		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js', async: true },
 		{ src: 'plugin/multiplex/client.js', async: true }
 
 		// other dependencies...
@@ -772,7 +779,7 @@ Reveal.initialize({
 
 	// Don't forget to add the dependencies
 	dependencies: [
-		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.10/socket.io.min.js', async: true },
+		{ src: '//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js', async: true },
 		{ src: 'plugin/multiplex/master.js', async: true },
 		{ src: 'plugin/multiplex/client.js', async: true }
 
@@ -878,28 +885,28 @@ Some reveal.js features, like external markdown and speaker notes, require that 
 2. Install [Grunt](http://gruntjs.com/getting-started#installing-the-cli)
 
 4. Clone the reveal.js repository
-```sh
-$ git clone https://github.com/hakimel/reveal.js.git
-```
+   ```sh
+   $ git clone https://github.com/hakimel/reveal.js.git
+   ```
 
 5. Navigate to the reveal.js folder
-```sh
-$ cd reveal.js
-```
+   ```sh
+   $ cd reveal.js
+   ```
 
 6. Install dependencies
-```sh
-$ npm install
-```
+   ```sh
+   $ npm install
+   ```
 
 7. Serve the presentation and monitor source files for changes
-```sh
-$ grunt serve
-```
+   ```sh
+   $ grunt serve
+   ```
 
 8. Open <http://localhost:8000> to view your presentation
 
-You can change the port by using `grunt serve --port 8001`.
+   You can change the port by using `grunt serve --port 8001`.
 
 
 ### Folder Structure
@@ -909,25 +916,8 @@ You can change the port by using `grunt serve --port 8001`.
 - **lib/** All other third party assets (JavaScript, CSS, fonts)
 
 
-### Contributing
-
-Please keep the [issue tracker](http://github.com/hakimel/reveal.js/issues) limited to **bug reports**, **feature requests** and **pull requests**. If you are reporting a bug make sure to include information about which browser and operating system you are using as well as the necessary steps to reproduce the issue.
-
-If you have personal support questions use [StackOverflow](http://stackoverflow.com/questions/tagged/reveal.js).
-
-
-#### Pull requests
-
-- Should follow the coding style of the file you work in, most importantly:
-  - Tabs to indent
-  - Single-quoted strings
-- Should be made towards the **dev branch**
-- Should be submitted from a feature/topic branch (not your master)
-- Should not include the minified **reveal.min.js** file
-
-
 ## License
 
 MIT licensed
 
-Copyright (C) 2013 Hakim El Hattab, http://hakim.se
+Copyright (C) 2014 Hakim El Hattab, http://hakim.se
