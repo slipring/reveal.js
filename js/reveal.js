@@ -1132,24 +1132,28 @@ var Reveal = (function(){
 
 			for( var i = 0, len = slides.length; i < len; i++ ) {
 				var slide = slides[ i ];
+				var style = window.getComputedStyle( slide );
 
-				// Don't bother updating invisible slides
-				if( slide.style.display === 'none' ) {
+				// Don't update invisible slides
+				if( style.display === 'none' ) {
 					continue;
 				}
-
-				if( config.center || slide.classList.contains( 'center' ) ) {
-					// Vertical stacks are not centred since their section
-					// children will be
-					if( slide.classList.contains( 'stack' ) ) {
-						slide.style.top = 0;
+				// If the display mode is 'block' flexbox is not supported by
+				// the current browser so we fall back on JavaScript centering
+				else if( style.display === 'block' ) {
+					if( config.center || slide.classList.contains( 'center' ) ) {
+						// Vertical stacks are not centred since their section children will be
+						if( slide.classList.contains( 'stack' ) ) {
+							slide.style.top = 0;
+						}
+						else {
+							slide.style.top = Math.max( ( ( slideHeight - getAbsoluteHeight( slide ) ) / 2 ) - slidePadding, 0 ) + 'px';
+							slide.style.height = 'auto';
+						}
 					}
 					else {
-						slide.style.top = Math.max( ( ( slideHeight - getAbsoluteHeight( slide ) ) / 2 ) - slidePadding, 0 ) + 'px';
+						slide.style.top = '';
 					}
-				}
-				else {
-					slide.style.top = '';
 				}
 
 			}
@@ -1866,7 +1870,7 @@ var Reveal = (function(){
 				distanceX = Math.abs( ( indexh - x ) % ( horizontalSlidesLength - viewDistance ) ) || 0;
 
 				// Show the horizontal slide if it's within the view distance
-				horizontalSlide.style.display = distanceX > viewDistance ? 'none' : 'block';
+				horizontalSlide.classList[ distanceX > viewDistance ? 'remove' : 'add' ]( 'visible' );
 
 				if( verticalSlidesLength ) {
 
@@ -1877,7 +1881,7 @@ var Reveal = (function(){
 
 						distanceY = x === indexh ? Math.abs( indexv - y ) : Math.abs( y - oy );
 
-						verticalSlide.style.display = ( distanceX + distanceY ) > viewDistance ? 'none' : 'block';
+						verticalSlide.classList[ ( distanceX + distanceY ) > viewDistance ? 'remove' : 'add' ]( 'visible' );
 					}
 
 				}
