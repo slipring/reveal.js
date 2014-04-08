@@ -93,13 +93,13 @@ var Reveal = (function(){
 			theme: null,
 
 			// Transition style
-			transition: 'default', // default/cube/page/concave/zoom/linear/fade/none
+			transition: 'default', // none/fade/slide/convex/concave/zoom
 
 			// Transition speed
 			transitionSpeed: 'default', // default/fast/slow
 
 			// Transition style for full page slide backgrounds
-			backgroundTransition: 'default', // default/linear/none
+			backgroundTransition: 'default', // none/fade/slide/convex/concave/zoom
 
 			// Parallax background image
 			parallaxBackgroundImage: '', // CSS syntax, e.g. "a.jpg"
@@ -428,71 +428,26 @@ var Reveal = (function(){
 		dom.background.innerHTML = '';
 		dom.background.classList.add( 'no-transition' );
 
-		// Helper method for creating a background element for the
-		// given slide
-		function _createBackground( slide, container ) {
-
-			var data = {
-				background: slide.getAttribute( 'data-background' ),
-				backgroundSize: slide.getAttribute( 'data-background-size' ),
-				backgroundImage: slide.getAttribute( 'data-background-image' ),
-				backgroundColor: slide.getAttribute( 'data-background-color' ),
-				backgroundRepeat: slide.getAttribute( 'data-background-repeat' ),
-				backgroundPosition: slide.getAttribute( 'data-background-position' ),
-				backgroundTransition: slide.getAttribute( 'data-background-transition' )
-			};
-
-			var element = document.createElement( 'div' );
-			element.className = 'slide-background';
-
-			if( data.background ) {
-				// Auto-wrap image urls in url(...)
-				if( /^(http|file|\/\/)/gi.test( data.background ) || /\.(svg|png|jpg|jpeg|gif|bmp)$/gi.test( data.background ) ) {
-					element.style.backgroundImage = 'url('+ data.background +')';
-				}
-				else {
-					element.style.background = data.background;
-				}
-			}
-
-			if( data.background || data.backgroundColor || data.backgroundImage ) {
-				element.setAttribute( 'data-background-hash', data.background + data.backgroundSize + data.backgroundImage + data.backgroundColor + data.backgroundRepeat + data.backgroundPosition + data.backgroundTransition );
-			}
-
-			// Additional and optional background properties
-			if( data.backgroundSize ) element.style.backgroundSize = data.backgroundSize;
-			if( data.backgroundImage ) element.style.backgroundImage = 'url("' + data.backgroundImage + '")';
-			if( data.backgroundColor ) element.style.backgroundColor = data.backgroundColor;
-			if( data.backgroundRepeat ) element.style.backgroundRepeat = data.backgroundRepeat;
-			if( data.backgroundPosition ) element.style.backgroundPosition = data.backgroundPosition;
-			if( data.backgroundTransition ) element.setAttribute( 'data-background-transition', data.backgroundTransition );
-
-			container.appendChild( element );
-
-			return element;
-
-		}
-
 		// Iterate over all horizontal slides
 		toArray( document.querySelectorAll( HORIZONTAL_SLIDES_SELECTOR ) ).forEach( function( slideh ) {
 
 			var backgroundStack;
 
 			if( isPrintingPDF() ) {
-				backgroundStack = _createBackground( slideh, slideh );
+				backgroundStack = createBackground( slideh, slideh );
 			}
 			else {
-				backgroundStack = _createBackground( slideh, dom.background );
+				backgroundStack = createBackground( slideh, dom.background );
 			}
 
 			// Iterate over all vertical slides
 			toArray( slideh.querySelectorAll( 'section' ) ).forEach( function( slidev ) {
 
 				if( isPrintingPDF() ) {
-					_createBackground( slidev, slidev );
+					createBackground( slidev, slidev );
 				}
 				else {
-					_createBackground( slidev, backgroundStack );
+					createBackground( slidev, backgroundStack );
 				}
 
 			} );
@@ -520,6 +475,79 @@ var Reveal = (function(){
 			dom.wrapper.classList.remove( 'has-parallax-background' );
 
 		}
+
+	}
+
+	/**
+	 * Creates a background for the given slide.
+	 *
+	 * @param {HTMLElement} slide
+	 * @param {HTMLElement} container The element that the background
+	 * should be appended to
+	 */
+	function createBackground( slide, container ) {
+
+		var data = {
+			background: slide.getAttribute( 'data-background' ),
+			backgroundSize: slide.getAttribute( 'data-background-size' ),
+			backgroundImage: slide.getAttribute( 'data-background-image' ),
+			backgroundVideo: slide.getAttribute( 'data-background-video' ),
+			backgroundColor: slide.getAttribute( 'data-background-color' ),
+			backgroundRepeat: slide.getAttribute( 'data-background-repeat' ),
+			backgroundPosition: slide.getAttribute( 'data-background-position' ),
+			backgroundTransition: slide.getAttribute( 'data-background-transition' )
+		};
+
+		var element = document.createElement( 'div' );
+		element.className = 'slide-background';
+
+		if( data.background ) {
+			// Auto-wrap image urls in url(...)
+			if( /^(http|file|\/\/)/gi.test( data.background ) || /\.(svg|png|jpg|jpeg|gif|bmp)$/gi.test( data.background ) ) {
+				element.style.backgroundImage = 'url('+ data.background +')';
+			}
+			else {
+				element.style.background = data.background;
+			}
+		}
+
+		// Create a hash for this combination of background settings.
+		// This is used to determine when two slide backgrounds are
+		// the same.
+		if( data.background || data.backgroundColor || data.backgroundImage || data.backgroundVideo ) {
+			element.setAttribute( 'data-background-hash', data.background +
+															data.backgroundSize +
+															data.backgroundImage +
+															data.backgroundVideo +
+															data.backgroundColor +
+															data.backgroundRepeat +
+															data.backgroundPosition +
+															data.backgroundTransition );
+		}
+
+		// Additional and optional background properties
+		if( data.backgroundSize ) element.style.backgroundSize = data.backgroundSize;
+		if( data.backgroundImage ) element.style.backgroundImage = 'url("' + data.backgroundImage + '")';
+		if( data.backgroundColor ) element.style.backgroundColor = data.backgroundColor;
+		if( data.backgroundRepeat ) element.style.backgroundRepeat = data.backgroundRepeat;
+		if( data.backgroundPosition ) element.style.backgroundPosition = data.backgroundPosition;
+		if( data.backgroundTransition ) element.setAttribute( 'data-background-transition', data.backgroundTransition );
+
+		// Create video background element
+		if( data.backgroundVideo ) {
+			var video = document.createElement( 'video' );
+
+			// Support comma separated lists of video sources
+			data.backgroundVideo.split( ',' ).forEach( function( source ) {
+				video.innerHTML += '<source src="'+ source +'">';
+			} );
+
+			element.appendChild( video );
+		}
+
+		container.appendChild( element );
+
+		return element;
 
 	}
 
@@ -1086,14 +1114,17 @@ var Reveal = (function(){
 			scale = Math.max( scale, config.minScale );
 			scale = Math.min( scale, config.maxScale );
 
-			// Prefer applying scale via zoom since Chrome blurs scaled content
-			// with nested transforms
-			if( typeof dom.slides.style.zoom !== 'undefined' && !navigator.userAgent.match( /(iphone|ipod|ipad|android)/gi ) ) {
+			// Prefer zooming in WebKit so that content remains crisp
+			if( /webkit/i.test( navigator.userAgent ) && typeof dom.slides.style.zoom !== 'undefined' ) {
 				dom.slides.style.zoom = scale;
 			}
 			// Apply scale transform as a fallback
 			else {
-				transformElement( dom.slides, 'translate(-50%, -50%) scale('+ scale +') translate(50%, 50%)' );
+				dom.slides.style.left = '50%';
+				dom.slides.style.top = '50%';
+				dom.slides.style.bottom = 'auto';
+				dom.slides.style.right = 'auto';
+				transformElement( dom.slides, 'translate(-50%, -50%) scale('+ scale +')' );
 			}
 
 			// Select all slides, vertical and horizontal
@@ -1114,7 +1145,7 @@ var Reveal = (function(){
 						slide.style.top = 0;
 					}
 					else {
-						slide.style.top = Math.max( - ( getAbsoluteHeight( slide ) / 2 ) - slidePadding, -slideHeight / 2 ) + 'px';
+						slide.style.top = Math.max( ( ( slideHeight - getAbsoluteHeight( slide ) ) / 2 ) - slidePadding, 0 ) + 'px';
 					}
 				}
 				else {
@@ -1972,7 +2003,7 @@ var Reveal = (function(){
 			}
 
 			if( includeAll || h === indexh ) {
-				toArray( backgroundh.childNodes ).forEach( function( backgroundv, v ) {
+				toArray( backgroundh.querySelectorAll( '.slide-background' ) ).forEach( function( backgroundv, v ) {
 
 					if( v < indexv ) {
 						backgroundv.className = 'slide-background past';
@@ -1992,9 +2023,22 @@ var Reveal = (function(){
 
 		} );
 
-		// Don't transition between identical backgrounds. This
-		// prevents unwanted flicker.
+		// Stop any currently playing video background
+		if( previousBackground ) {
+
+			var previousVideo = previousBackground.querySelector( 'video' );
+			if( previousVideo ) previousVideo.pause();
+
+		}
+
 		if( currentBackground ) {
+
+			// Start video playback
+			var currentVideo = currentBackground.querySelector( 'video' );
+			if( currentVideo ) currentVideo.play();
+
+			// Don't transition between identical backgrounds. This
+			// prevents unwanted flicker.
 			var previousBackgroundHash = previousBackground ? previousBackground.getAttribute( 'data-background-hash' ) : null;
 			var currentBackgroundHash = currentBackground.getAttribute( 'data-background-hash' );
 			if( currentBackgroundHash && currentBackgroundHash === previousBackgroundHash && currentBackground !== previousBackground ) {
@@ -2002,6 +2046,7 @@ var Reveal = (function(){
 			}
 
 			previousBackground = currentBackground;
+
 		}
 
 		// Allow the first background to apply without transition
@@ -2369,6 +2414,15 @@ var Reveal = (function(){
 		}
 
 		return { h: h, v: v, f: f };
+
+	}
+
+	/**
+	 * Retrieves the total number of slides in this presentation.
+	 */
+	function getTotalSlides() {
+
+		return document.querySelectorAll( SLIDES_SELECTOR + ':not(.stack)' ).length;
 
 	}
 
@@ -3436,6 +3490,8 @@ var Reveal = (function(){
 
 		// Returns the indices of the current, or specified, slide
 		getIndices: getIndices,
+
+		getTotalSlides: getTotalSlides,
 
 		// Returns the slide at the specified index, y is optional
 		getSlide: function( x, y ) {

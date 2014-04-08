@@ -560,8 +560,11 @@ body {
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	left: 50%;
-	top: 50%;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	margin: auto;
 
 	overflow: visible;
 	z-index: 1;
@@ -576,10 +579,10 @@ body {
 	    -ms-perspective: 600px;
 	        perspective: 600px;
 
-	-webkit-perspective-origin: 0px -100px;
-	   -moz-perspective-origin: 0px -100px;
-	    -ms-perspective-origin: 0px -100px;
-	        perspective-origin: 0px -100px;
+	-webkit-perspective-origin: 50% 40%;
+	   -moz-perspective-origin: 50% 40%;
+	    -ms-perspective-origin: 50% 40%;
+	        perspective-origin: 50% 40%;
 }
 
 .reveal .slides>section {
@@ -640,11 +643,6 @@ body {
 	        transition-duration: 1200ms;
 }
 
-.reveal .slides>section {
-	left: -50%;
-	top: -50%;
-}
-
 .reveal .slides>section.stack {
 	padding-top: 0;
 	padding-bottom: 0;
@@ -685,18 +683,79 @@ body {
 
 
 /*********************************************
- * DEFAULT TRANSITION
+ * SLIDE TRANSITION
+ * Aliased 'linear' for backwards compatibility
+ *********************************************/
+
+.reveal.slide section.
+.reveal.linear section {
+	-webkit-backface-visibility: hidden;
+	   -moz-backface-visibility: hidden;
+	    -ms-backface-visibility: hidden;
+	        backface-visibility: hidden;
+}
+
+.reveal .slides>section[data-transition=slide].past,
+.reveal.slide .slides>section:not([data-transition]).past,
+.reveal .slides>section[data-transition=linear].past,
+.reveal.linear .slides>section:not([data-transition]).past {
+	-webkit-transform: translate(-150%, 0);
+	   -moz-transform: translate(-150%, 0);
+	    -ms-transform: translate(-150%, 0);
+	     -o-transform: translate(-150%, 0);
+	        transform: translate(-150%, 0);
+}
+.reveal .slides>section[data-transition=slide].future,
+.reveal.slide .slides>section:not([data-transition]).future,
+.reveal .slides>section[data-transition=linear].future,
+.reveal.linear .slides>section:not([data-transition]).future {
+	-webkit-transform: translate(150%, 0);
+	   -moz-transform: translate(150%, 0);
+	    -ms-transform: translate(150%, 0);
+	     -o-transform: translate(150%, 0);
+	        transform: translate(150%, 0);
+}
+
+.reveal .slides>section>section[data-transition=slide].past,
+.reveal.slide .slides>section>section:not([data-transition]).past,
+.reveal .slides>section>section[data-transition=linear].past,
+.reveal.linear .slides>section>section:not([data-transition]).past {
+	-webkit-transform: translate(0, -150%);
+	   -moz-transform: translate(0, -150%);
+	    -ms-transform: translate(0, -150%);
+	     -o-transform: translate(0, -150%);
+	        transform: translate(0, -150%);
+}
+.reveal .slides>section>section[data-transition=slide].future,
+.reveal.slide .slides>section>section:not([data-transition]).future,
+.reveal .slides>section>section[data-transition=linear].future,
+.reveal.linear .slides>section>section:not([data-transition]).future {
+	-webkit-transform: translate(0, 150%);
+	   -moz-transform: translate(0, 150%);
+	    -ms-transform: translate(0, 150%);
+	     -o-transform: translate(0, 150%);
+	        transform: translate(0, 150%);
+}
+
+
+/*********************************************
+ * CONVEX TRANSITION
+ * Aliased 'default' for backwards compatibility
  *********************************************/
 
 .reveal .slides>section[data-transition=default].past,
-.reveal.default .slides>section:not([data-transition]).past {
+.reveal.default .slides>section:not([data-transition]).past,
+.reveal .slides>section[data-transition=convex].past,
+.reveal.convex .slides>section:not([data-transition]).past {
 	-webkit-transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
 	   -moz-transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
 	    -ms-transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
 	        transform: translate3d(-100%, 0, 0) rotateY(-90deg) translate3d(-100%, 0, 0);
 }
 .reveal .slides>section[data-transition=default].future,
-.reveal.default .slides>section:not([data-transition]).future {
+.reveal.default .slides>section:not([data-transition]).future,
+.reveal .slides>section[data-transition=convex].future,
+.reveal.convex .slides>section:not([data-transition]).future {
 	-webkit-transform: translate3d(100%, 0, 0) rotateY(90deg) translate3d(100%, 0, 0);
 	   -moz-transform: translate3d(100%, 0, 0) rotateY(90deg) translate3d(100%, 0, 0);
 	    -ms-transform: translate3d(100%, 0, 0) rotateY(90deg) translate3d(100%, 0, 0);
@@ -704,14 +763,18 @@ body {
 }
 
 .reveal .slides>section>section[data-transition=default].past,
-.reveal.default .slides>section>section:not([data-transition]).past {
+.reveal.default .slides>section>section:not([data-transition]).past,
+.reveal .slides>section>section[data-transition=convex].past,
+.reveal.convex .slides>section>section:not([data-transition]).past {
 	-webkit-transform: translate3d(0, -300px, 0) rotateX(70deg) translate3d(0, -300px, 0);
 	   -moz-transform: translate3d(0, -300px, 0) rotateX(70deg) translate3d(0, -300px, 0);
 	    -ms-transform: translate3d(0, -300px, 0) rotateX(70deg) translate3d(0, -300px, 0);
 	        transform: translate3d(0, -300px, 0) rotateX(70deg) translate3d(0, -300px, 0);
 }
 .reveal .slides>section>section[data-transition=default].future,
-.reveal.default .slides>section>section:not([data-transition]).future {
+.reveal.default .slides>section>section:not([data-transition]).future,
+.reveal .slides>section>section[data-transition=convex].future,
+.reveal.convex .slides>section>section:not([data-transition]).future {
 	-webkit-transform: translate3d(0, 300px, 0) rotateX(-70deg) translate3d(0, 300px, 0);
 	   -moz-transform: translate3d(0, 300px, 0) rotateX(-70deg) translate3d(0, 300px, 0);
 	    -ms-transform: translate3d(0, 300px, 0) rotateX(-70deg) translate3d(0, 300px, 0);
@@ -796,52 +859,6 @@ body {
 }
 .reveal .slides>section>section[data-transition=zoom].future,
 .reveal.zoom .slides>section>section:not([data-transition]).future {
-	-webkit-transform: translate(0, 150%);
-	   -moz-transform: translate(0, 150%);
-	    -ms-transform: translate(0, 150%);
-	     -o-transform: translate(0, 150%);
-	        transform: translate(0, 150%);
-}
-
-
-/*********************************************
- * LINEAR TRANSITION
- *********************************************/
-
-.reveal.linear section {
-	-webkit-backface-visibility: hidden;
-	   -moz-backface-visibility: hidden;
-	    -ms-backface-visibility: hidden;
-	        backface-visibility: hidden;
-}
-
-.reveal .slides>section[data-transition=linear].past,
-.reveal.linear .slides>section:not([data-transition]).past {
-	-webkit-transform: translate(-150%, 0);
-	   -moz-transform: translate(-150%, 0);
-	    -ms-transform: translate(-150%, 0);
-	     -o-transform: translate(-150%, 0);
-	        transform: translate(-150%, 0);
-}
-.reveal .slides>section[data-transition=linear].future,
-.reveal.linear .slides>section:not([data-transition]).future {
-	-webkit-transform: translate(150%, 0);
-	   -moz-transform: translate(150%, 0);
-	    -ms-transform: translate(150%, 0);
-	     -o-transform: translate(150%, 0);
-	        transform: translate(150%, 0);
-}
-
-.reveal .slides>section>section[data-transition=linear].past,
-.reveal.linear .slides>section>section:not([data-transition]).past {
-	-webkit-transform: translate(0, -150%);
-	   -moz-transform: translate(0, -150%);
-	    -ms-transform: translate(0, -150%);
-	     -o-transform: translate(0, -150%);
-	        transform: translate(0, -150%);
-}
-.reveal .slides>section>section[data-transition=linear].future,
-.reveal.linear .slides>section>section:not([data-transition]).future {
 	-webkit-transform: translate(0, 150%);
 	   -moz-transform: translate(0, 150%);
 	    -ms-transform: translate(0, 150%);
@@ -1133,10 +1150,10 @@ body {
  *********************************************/
 
 .reveal.overview .slides {
-	-webkit-perspective-origin: 0% 0%;
-	   -moz-perspective-origin: 0% 0%;
-	    -ms-perspective-origin: 0% 0%;
-	        perspective-origin: 0% 0%;
+	-webkit-perspective-origin: 50% 50%;
+	   -moz-perspective-origin: 50% 50%;
+	    -ms-perspective-origin: 50% 50%;
+	        perspective-origin: 50% 50%;
 
 	-webkit-perspective: 700px;
 	   -moz-perspective: 700px;
@@ -1146,7 +1163,6 @@ body {
 
 .reveal.overview .slides section {
 	height: 600px;
-	top: -300px !important;
 	overflow: hidden;
 	opacity: 1 !important;
 	visibility: visible !important;
@@ -1344,6 +1360,17 @@ body {
 		visibility: visible !important;
 	}
 
+/* Video backgrounds */
+.reveal .slide-background video {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	top: 0;
+	left: 0;
+}
+
 /* Immediate transition style */
 .reveal[data-background-transition=none]>.backgrounds .slide-background,
 .reveal>.backgrounds .slide-background[data-background-transition=none] {
@@ -1352,7 +1379,7 @@ body {
 	        transition: none;
 }
 
-/* 2D slide */
+/* Slide */
 .reveal[data-background-transition=slide]>.backgrounds .slide-background,
 .reveal>.backgrounds .slide-background[data-background-transition=slide] {
 	opacity: 1;
