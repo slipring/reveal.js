@@ -33,30 +33,33 @@
         ]
 */
 
+            /* RELATIVE PATH METHODS*/
+            /* stores location of this script, should work on more browsers,
+               but may req debug if several scripts are loading in parallel */
+        // var scriptSource = (function(scripts) {
+        //     var scripts = document.getElementsByTagName('script'),
+        //         script = scripts[scripts.length - 1];
 
-    /* stores location of this script, should work on more browsers,
-       but may req debug if several scripts are loading in parallel */
+        //     if (script.getAttribute.length !== undefined) {
+        //         return script.src
+        //     }
 
-// var scriptSource = (function(scripts) {
-//     var scripts = document.getElementsByTagName('script'),
-//         script = scripts[scripts.length - 1];
+        //     return script.getAttribute('src', -1)
+        // }());
 
-//     if (script.getAttribute.length !== undefined) {
-//         return script.src
-//     }
+        // var presentPath = scriptSource.substring(0, scriptSource.lastIndexOf("/") + 1);
+            /* general trim of script name from src path, keeps the slash */
 
-//     return script.getAttribute('src', -1)
-// }());
 
-var thisScript = document.currentScript;
-var scriptSource = thisScript.src;
-    /* stores location of this script, but only works in Chrome, FF, Opera */
+            /*    OR    */
 
-// var presentPath = scriptSource.substring(0, scriptSource.length - 6);
-    /* removes 6 chars (filename 'tts.js') to give site-specific path */
 
-var presentPath = scriptSource.substring(0, scriptSource.lastIndexOf("/") + 1);
-    /* general trim of script name from src path, keeps the slash */
+        // var thisScript = document.currentScript;
+        // var scriptSource = thisScript.src;
+            /* stores location of this script, but only works in Chrome, FF, Opera */
+
+        // var presentPath = scriptSource.substring(0, scriptSource.length - 6);
+            /* removes 6 chars (filename 'tts.js') to give site-specific path */
 
 function loadScript(url, callback) {
 
@@ -78,13 +81,14 @@ function loadScript(url, callback) {
         };
     }
 
-    script.src = presentPath + url;
+    // script.src = presentPath + url;    /*  for use in path relativity to script location */
+    script.src = url;
     document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 
 //sound manager used for any browser that doesn't support HTML 5 audio tag
-loadScript('soundmanager2-jsmin.js', function () {
+loadScript('../reveal.js/plugin/text-to-speech/soundmanager2-jsmin.js', function () {
     //initialise soundManager
     soundManager.setup({
         url: '/',
@@ -95,7 +99,7 @@ loadScript('soundmanager2-jsmin.js', function () {
     });
 });
 
-loadScript('google-tts.js', function () {
+loadScript('../reveal.js/plugin/text-to-speech/google-tts.js', function () {
     Reveal.addEventListener('slidechanged', function (event) {
         nextindexh = event.indexh;
         var sentence = document.getElementsByTagName('section')[nextindexh].getAttribute('text-to-speech');
