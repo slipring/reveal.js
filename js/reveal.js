@@ -44,6 +44,9 @@ var Reveal = (function(){
 			// Enable keyboard shortcuts for navigation
 			keyboard: true,
 
+			// Optional function that blocks keyboard events when retuning false
+			keyboardCondition: null,
+
 			// Enable the slide overview mode
 			overview: true,
 
@@ -1747,6 +1750,8 @@ var Reveal = (function(){
 		var slides = toArray( document.querySelectorAll( selector ) ),
 			slidesLength = slides.length;
 
+		var printMode = isPrintingPDF();
+
 		if( slidesLength ) {
 
 			// Should the index loop?
@@ -1772,6 +1777,17 @@ var Reveal = (function(){
 
 				// http://www.w3.org/html/wg/drafts/html/master/editing.html#the-hidden-attribute
 				element.setAttribute( 'hidden', '' );
+
+				// If this element contains vertical slides
+				if( element.querySelector( 'section' ) ) {
+					element.classList.add( 'stack' );
+				}
+
+				// If we're printing static slides, all slides are "present"
+				if( printMode ) {
+					element.classList.add( 'present' );
+					continue;
+				}
 
 				if( i < index ) {
 					// Any element previous to index is given the 'past' class
@@ -1802,11 +1818,6 @@ var Reveal = (function(){
 							futureFragment.classList.remove( 'current-fragment' );
 						}
 					}
-				}
-
-				// If this element contains vertical slides
-				if( element.querySelector( 'section' ) ) {
-					element.classList.add( 'stack' );
 				}
 			}
 
@@ -2835,6 +2846,12 @@ var Reveal = (function(){
 	 * Handler for the document level 'keydown' event.
 	 */
 	function onDocumentKeyDown( event ) {
+
+		// If there's a condition specified and it returns false,
+		// ignore this event
+		if( typeof config.keyboardCondition === 'function' && config.keyboardCondition() === false ) {
+			return true;
+		}
 
 		// Remember if auto-sliding was paused so we can toggle it
 		var autoSlideWasPaused = autoSlidePaused;
