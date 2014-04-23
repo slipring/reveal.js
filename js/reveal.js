@@ -89,6 +89,12 @@ var Reveal = (function(){
 			// Opens links in an iframe preview overlay
 			previewLinks: false,
 
+			// Exposes the reveal.js API through window.postMessage
+			postMessage: true,
+
+			// Dispatches all reveal.js events to the parent window through postMessage
+			postMessageEvents: false,
+
 			// Focuses body when page changes visiblity to ensure keyboard shortcuts work
 			focusBodyOnPageVisiblityChange: true,
 
@@ -242,7 +248,6 @@ var Reveal = (function(){
 
 	}
 
-
     /**
      * Loads the dependencies of reveal.js. Dependencies are
      * defined via the configuration option 'dependencies'
@@ -315,6 +320,9 @@ var Reveal = (function(){
 
 		// Make sure we've got all the DOM elements we need
 		setupDOM();
+
+		// Listen to messages posted to this window
+		setupPostMessage();
 
 		// Resets all vertical slides so that only the first is visible
 		resetVerticalSlides();
@@ -502,7 +510,9 @@ var Reveal = (function(){
 		};
 
 		var element = document.createElement( 'div' );
-		element.className = 'slide-background';
+
+		// Carry over custom classes from the slide to the background
+		element.className = 'slide-background ' + slide.className.replace( /present|past|future/, '' );
 
 		if( data.background ) {
 			// Auto-wrap image urls in url(...)
@@ -551,6 +561,36 @@ var Reveal = (function(){
 		container.appendChild( element );
 
 		return element;
+
+	}
+
+	/**
+	 * Registers a listener to postMessage events, this makes it
+	 * possible to call all reveal.js API methods from another
+	 * window. For example:
+	 *
+	 * revealWindow.postMessage( JSON.stringify({
+	 *   method: 'slide',
+	 *   args: [ 2 ]
+	 * }), '*' );
+	 */
+	function setupPostMessage() {
+
+		if( config.postMessage ) {
+			window.addEventListener( 'message', function ( event ) {
+				var data = event.data;
+
+				// Make sure we're dealing with JSON
+				if( data.charAt( 0 ) === '{' && data.charAt( data.length - 1 ) === '}' ) {
+					data = JSON.parse( data );
+
+					// Check if the requested method can be found
+					if( data.method && typeof Reveal[data.method] === 'function' ) {
+						Reveal[data.method].apply( Reveal, data.args );
+					}
+				}
+			}, false );
+		}
 
 	}
 
@@ -936,12 +976,18 @@ var Reveal = (function(){
 	 * Dispatches an event of the specified type from the
 	 * reveal DOM element.
 	 */
-	function dispatchEvent( type, properties ) {
+	function dispatchEvent( type, args ) {
 
-		var event = document.createEvent( "HTMLEvents", 1, 2 );
+		var event = document.createEvent( 'HTMLEvents', 1, 2 );
 		event.initEvent( type, true, true );
-		extend( event, properties );
+		extend( event, args );
 		dom.wrapper.dispatchEvent( event );
+
+		// If we're in an iframe, post each reveal.js event to the
+		// parent window. Used by the notes plugin
+		if( config.postMessageEvents && window.parent !== window.self ) {
+			window.parent.postMessage( JSON.stringify({ namespace: 'reveal', eventName: type, state: getState() }), '*' );
+		}
 
 	}
 
@@ -1867,6 +1913,11 @@ var Reveal = (function(){
 				viewDistance = isOverview() ? 6 : 1;
 			}
 
+			// Limit view distance on weaker devices
+			if( isPrintingPDF() ) {
+				viewDistance = Number.MAX_VALUE;
+			}
+
 			for( var x = 0; x < horizontalSlidesLength; x++ ) {
 				var horizontalSlide = horizontalSlides[x];
 
@@ -1877,7 +1928,13 @@ var Reveal = (function(){
 				distanceX = Math.abs( ( indexh - x ) % ( horizontalSlidesLength - viewDistance ) ) || 0;
 
 				// Show the horizontal slide if it's within the view distance
-				horizontalSlide.style.display = distanceX > viewDistance ? 'none' : 'block';
+				if( distanceX < viewDistance ) {
+					horizontalSlide.style.display = 'block';
+					loadSlide( horizontalSlide );
+				}
+				else {
+					horizontalSlide.style.display = 'none';
+				}
 
 				if( verticalSlidesLength ) {
 
@@ -1888,7 +1945,13 @@ var Reveal = (function(){
 
 						distanceY = x === indexh ? Math.abs( indexv - y ) : Math.abs( y - oy );
 
-						verticalSlide.style.display = ( distanceX + distanceY ) > viewDistance ? 'none' : 'block';
+						if( distanceX + distanceY < viewDistance ) {
+							verticalSlide.style.display = 'block';
+							loadSlide( verticalSlide );
+						}
+						else {
+							verticalSlide.style.display = 'none';
+						}
 					}
 
 				}
@@ -2000,14 +2063,18 @@ var Reveal = (function(){
 		// states of their slides (past/present/future)
 		toArray( dom.background.childNodes ).forEach( function( backgroundh, h ) {
 
+			backgroundh.classList.remove( 'past' );
+			backgroundh.classList.remove( 'present' );
+			backgroundh.classList.remove( 'future' );
+
 			if( h < indexh ) {
-				backgroundh.className = 'slide-background ' + horizontalPast;
+				backgroundh.classList.add( horizontalPast );
 			}
 			else if ( h > indexh ) {
-				backgroundh.className = 'slide-background ' + horizontalFuture;
+				backgroundh.classList.add( horizontalFuture );
 			}
 			else {
-				backgroundh.className = 'slide-background present';
+				backgroundh.classList.add( 'present' );
 
 				// Store a reference to the current background element
 				currentBackground = backgroundh;
@@ -2016,14 +2083,18 @@ var Reveal = (function(){
 			if( includeAll || h === indexh ) {
 				toArray( backgroundh.querySelectorAll( '.slide-background' ) ).forEach( function( backgroundv, v ) {
 
+					backgroundv.classList.remove( 'past' );
+					backgroundv.classList.remove( 'present' );
+					backgroundv.classList.remove( 'future' );
+
 					if( v < indexv ) {
-						backgroundv.className = 'slide-background past';
+						backgroundv.classList.add( 'past' );
 					}
 					else if ( v > indexv ) {
-						backgroundv.className = 'slide-background future';
+						backgroundv.classList.add( 'future' );
 					}
 					else {
-						backgroundv.className = 'slide-background present';
+						backgroundv.classList.add( 'present' );
 
 						// Only if this is the present horizontal and vertical slide
 						if( h === indexh ) currentBackground = backgroundv;
@@ -2105,6 +2176,37 @@ var Reveal = (function(){
 			dom.background.style.backgroundPosition = horizontalOffset + 'px ' + verticalOffset + 'px';
 
 		}
+
+	}
+
+	/**
+	 * Loads any content that is set to load lazily (data-src)
+	 * inside of the given slide.
+	 */
+	function loadSlide( slide ) {
+
+		// Media elements with data-src attributes
+		toArray( slide.querySelectorAll( 'img[data-src], video[data-src], audio[data-src]' ) ).forEach( function( element ) {
+			element.setAttribute( 'src', element.getAttribute( 'data-src' ) );
+			element.removeAttribute( 'data-src' );
+		} );
+
+		// Media elements with multiple <source>s
+		toArray( slide.querySelectorAll( 'video, audio' ) ).forEach( function( media ) {
+			var sources = 0;
+
+			toArray( media.querySelectorAll( 'source[data-src]' ) ).forEach( function( source ) {
+				source.setAttribute( 'src', source.getAttribute( 'data-src' ) );
+				source.removeAttribute( 'data-src' );
+				sources += 1;
+			} );
+
+			// If we rewrote sources for this video/audio element, we need
+			// to manually tell it to load from its new origin
+			if( sources > 0 ) {
+				media.load();
+			}
+		} );
 
 	}
 
@@ -2465,8 +2567,17 @@ var Reveal = (function(){
 
 		if( typeof state === 'object' ) {
 			slide( deserialize( state.indexh ), deserialize( state.indexv ), deserialize( state.indexf ) );
-			togglePause( deserialize( state.paused ) );
-			toggleOverview( deserialize( state.overview ) );
+
+			var pausedFlag = deserialize( state.paused ),
+				overviewFlag = deserialize( state.overview );
+
+			if( typeof pausedFlag === 'boolean' && pausedFlag !== isPaused() ) {
+				togglePause( pausedFlag );
+			}
+
+			if( typeof overviewFlag === 'boolean' && overviewFlag !== isOverview() ) {
+				toggleOverview( overviewFlag );
+			}
 		}
 
 	}
@@ -2716,21 +2827,25 @@ var Reveal = (function(){
 
 	function pauseAutoSlide() {
 
-		autoSlidePaused = true;
-		dispatchEvent( 'autoslidepaused' );
-		clearTimeout( autoSlideTimeout );
+		if( autoSlide && !autoSlidePaused ) {
+			autoSlidePaused = true;
+			dispatchEvent( 'autoslidepaused' );
+			clearTimeout( autoSlideTimeout );
 
-		if( autoSlidePlayer ) {
-			autoSlidePlayer.setPlaying( false );
+			if( autoSlidePlayer ) {
+				autoSlidePlayer.setPlaying( false );
+			}
 		}
 
 	}
 
 	function resumeAutoSlide() {
 
-		autoSlidePaused = false;
-		dispatchEvent( 'autoslideresumed' );
-		cueAutoSlide();
+		if( autoSlide && autoSlidePaused ) {
+			autoSlidePaused = false;
+			dispatchEvent( 'autoslideresumed' );
+			cueAutoSlide();
+		}
 
 	}
 
