@@ -454,8 +454,8 @@
 		var slideSize = getComputedSlideSize( window.innerWidth, window.innerHeight );
 
 		// Dimensions of the PDF pages
-		var pageWidth = Math.ceil( slideSize.width * ( 1 + config.margin ) ),
-			pageHeight = Math.ceil( slideSize.height * ( 1 + config.margin  ) );
+		var pageWidth = Math.floor( slideSize.width * ( 1 + config.margin ) ),
+			pageHeight = Math.floor( slideSize.height * ( 1 + config.margin  ) );
 
 		// Dimensions of slides within the pages
 		var slideWidth = slideSize.width,
@@ -463,6 +463,9 @@
 
 		// Let the browser know what page size we want to print
 		injectStyleSheet( '@page{size:'+ pageWidth +'px '+ pageHeight +'px; margin: 0;}' );
+
+		// Limit the size of certain elements to the dimensions of the slide
+		injectStyleSheet( '.reveal img, .reveal video, .reveal iframe{max-width: '+ slideWidth +'px; max-height:'+ slideHeight +'px}' );
 
 		document.body.classList.add( 'print-pdf' );
 		document.body.style.width = pageWidth + 'px';
@@ -518,15 +521,26 @@
 	 */
 	function createSingletonNode( container, tagname, classname, innerHTML ) {
 
-		var node = container.querySelector( '.' + classname );
-		if( !node ) {
-			node = document.createElement( tagname );
-			node.classList.add( classname );
-			if( innerHTML !== null ) {
-				node.innerHTML = innerHTML;
+		// Find all nodes matching the description
+		var nodes = container.querySelectorAll( '.' + classname );
+
+		// Check all matches to find one which is a direct child of
+		// the specified container
+		for( var i = 0; i < nodes.length; i++ ) {
+			var testNode = nodes[i];
+			if( testNode.parentNode === container ) {
+				return testNode;
 			}
-			container.appendChild( node );
 		}
+
+		// If no node was found, create it now
+		var node = document.createElement( tagname );
+		node.classList.add( classname );
+		if( typeof innerHTML === 'string' ) {
+			node.innerHTML = innerHTML;
+		}
+		container.appendChild( node );
+
 		return node;
 
 	}
@@ -2093,7 +2107,7 @@
 	function updateProgress() {
 
 		// Update progress if enabled
-		if( config.progress && dom.progress ) {
+		if( config.progress && dom.progressbar ) {
 
 			dom.progressbar.style.width = getProgress() * window.innerWidth + 'px';
 
@@ -2750,7 +2764,14 @@
 		// inside of the slides
 		if( isPrintingPDF() ) {
 			var slide = getSlide( x, y );
-			return slide ? slide.querySelector( '.slide-background' ) : undefined;
+			if( slide ) {
+				var background = slide.querySelector( '.slide-background' );
+				if( background && background.parentNode === slide ) {
+					return background;
+				}
+			}
+
+			return undefined;
 		}
 
 		var horizontalBackground = document.querySelectorAll( '.backgrounds>.slide-background' )[ x ];
@@ -3283,7 +3304,7 @@
 		// If the input resulted in a triggered action we should prevent
 		// the browsers default behavior
 		if( triggered ) {
-			event.preventDefault();
+			event.preventDefault && event.preventDefault();
 		}
 		// ESC or O key
 		else if ( ( event.keyCode === 27 || event.keyCode === 79 ) && features.transforms3d ) {
@@ -3294,7 +3315,7 @@
 				toggleOverview();
 			}
 
-			event.preventDefault();
+			event.preventDefault && event.preventDefault();
 		}
 
 		// If auto-sliding is enabled we need to cue up
@@ -3896,7 +3917,7 @@
 
 		// Returns true if we're currently on the first slide
 		isFirstSlide: function() {
-			return document.querySelector( SLIDES_SELECTOR + '.past' ) == null ? true : false;
+			return ( indexh === 0 && indexv === 0 );
 		},
 
 		// Returns true if we're currently on the last slide
