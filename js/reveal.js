@@ -112,7 +112,7 @@
 			postMessageEvents: false,
 
 			// Focuses body when page changes visiblity to ensure keyboard shortcuts work
-			focusBodyOnPageVisiblityChange: true,
+			focusBodyOnPageVisibilityChange: true,
 
 			// Theme (see /css/theme)
 			theme: null,
@@ -845,7 +845,7 @@
 			dom.progress.addEventListener( 'click', onProgressClicked, false );
 		}
 
-		if( config.focusBodyOnPageVisiblityChange ) {
+		if( config.focusBodyOnPageVisibilityChange ) {
 			var visibilityChange;
 
 			if( 'hidden' in document ) {
@@ -1862,6 +1862,9 @@
 		// Re-create the slide backgrounds
 		createBackgrounds();
 
+		// Write the current hash to the URL
+		writeURL();
+
 		sortAllFragments();
 
 		updateControls();
@@ -2649,7 +2652,7 @@
 			if( typeof delay === 'number' ) {
 				writeURLTimeout = setTimeout( writeURL, delay );
 			}
-			else {
+			else if( currentSlide ) {
 				var url = '/';
 
 				// Attempt to create a named link based on the slide's ID
@@ -2660,7 +2663,7 @@
 				}
 
 				// If the current slide has an ID, use that as a named link
-				if( currentSlide && typeof id === 'string' && id.length ) {
+				if( typeof id === 'string' && id.length ) {
 					url = '/' + id;
 				}
 				// Otherwise use the /h/v index
