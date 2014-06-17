@@ -85,6 +85,10 @@
 			// i.e. contained within a limited portion of the screen
 			embedded: false,
 
+			// Flags if we should show a help overlay when the questionmark
+			// key is pressed
+			help: true,
+
 			// Number of milliseconds between automatically proceeding to the
 			// next slide, disabled when set to 0, this value can be overwritten
 			// by using a data-autoslide attribute on your slides
@@ -1281,39 +1285,43 @@
 	 */
 	function showHelp() {
 
-		closeOverlay();
+		if( config.help ) {
 
-		dom.overlay = document.createElement( 'div' );
-		dom.overlay.classList.add( 'overlay' );
-		dom.overlay.classList.add( 'overlay-help' );
-		dom.wrapper.appendChild( dom.overlay );
-
-		var html = '<p class="title">Keyboard Shortcuts</p><br/>';
-
-		html += '<table><th>KEY</th><th>ACTION</th>';
-		for( var key in keyboardShortcuts ) {
-			html += '<tr><td>' + key + '</td><td>' + keyboardShortcuts[ key ] + '</td></tr>';
-		}
-
-		html += '</table>';
-
-		dom.overlay.innerHTML = [
-			'<header>',
-				'<a class="close" href="#"><span class="icon"></span></a>',
-			'</header>',
-			'<div class="viewport">',
-				'<div class="viewport-inner">'+ html +'</div>',
-			'</div>'
-		].join('');
-
-		dom.overlay.querySelector( '.close' ).addEventListener( 'click', function( event ) {
 			closeOverlay();
-			event.preventDefault();
-		}, false );
 
-		setTimeout( function() {
-			dom.overlay.classList.add( 'visible' );
-		}, 1 );
+			dom.overlay = document.createElement( 'div' );
+			dom.overlay.classList.add( 'overlay' );
+			dom.overlay.classList.add( 'overlay-help' );
+			dom.wrapper.appendChild( dom.overlay );
+
+			var html = '<p class="title">Keyboard Shortcuts</p><br/>';
+
+			html += '<table><th>KEY</th><th>ACTION</th>';
+			for( var key in keyboardShortcuts ) {
+				html += '<tr><td>' + key + '</td><td>' + keyboardShortcuts[ key ] + '</td></tr>';
+			}
+
+			html += '</table>';
+
+			dom.overlay.innerHTML = [
+				'<header>',
+					'<a class="close" href="#"><span class="icon"></span></a>',
+				'</header>',
+				'<div class="viewport">',
+					'<div class="viewport-inner">'+ html +'</div>',
+				'</div>'
+			].join('');
+
+			dom.overlay.querySelector( '.close' ).addEventListener( 'click', function( event ) {
+				closeOverlay();
+				event.preventDefault();
+			}, false );
+
+			setTimeout( function() {
+				dom.overlay.classList.add( 'visible' );
+			}, 1 );
+
+		}
 
 	}
 
@@ -1962,6 +1970,8 @@
 		updateSlideNumber();
 		updateSlidesVisibility();
 
+		formatEmbeddedContent();
+
 	}
 
 	/**
@@ -2551,6 +2561,29 @@
 	}
 
 	/**
+	 * Enforces origin-specific format rules for embedded media.
+	 */
+	function formatEmbeddedContent() {
+
+		// YouTube frames must include "?enablejsapi=1"
+		toArray( dom.slides.querySelectorAll( 'iframe[src*="youtube.com/embed/"]' ) ).forEach( function( el ) {
+			var src = el.getAttribute( 'src' );
+			if( !/enablejsapi\=1/gi.test( src ) ) {
+				el.setAttribute( 'src', src + ( !/\?/.test( src ) ? '?' : '&' ) + 'enablejsapi=1' );
+			}
+		});
+
+		// Vimeo frames must include "?api=1"
+		toArray( dom.slides.querySelectorAll( 'iframe[src*="player.vimeo.com/"]' ) ).forEach( function( el ) {
+			var src = el.getAttribute( 'src' );
+			if( !/api\=1/gi.test( src ) ) {
+				el.setAttribute( 'src', src + ( !/\?/.test( src ) ? '?' : '&' ) + 'api=1' );
+			}
+		});
+
+	}
+
+	/**
 	 * Start playback of any embedded content inside of
 	 * the targeted slide.
 	 */
@@ -2573,6 +2606,14 @@
 			toArray( slide.querySelectorAll( 'iframe[src*="youtube.com/embed/"]' ) ).forEach( function( el ) {
 				if( el.hasAttribute( 'data-autoplay' ) ) {
 					el.contentWindow.postMessage( '{"event":"command","func":"playVideo","args":""}', '*' );
+				}
+			});
+
+			// Vimeo embeds
+			toArray( slide.querySelectorAll( 'iframe[src*="player.vimeo.com/"]' ) ).forEach( function( el ) {
+				if( el.hasAttribute( 'data-autoplay' ) ) {
+					console.log(11);
+					el.contentWindow.postMessage( '{"method":"play"}', '*' );
 				}
 			});
 		}
@@ -2602,6 +2643,13 @@
 			toArray( slide.querySelectorAll( 'iframe[src*="youtube.com/embed/"]' ) ).forEach( function( el ) {
 				if( !el.hasAttribute( 'data-ignore' ) && typeof el.contentWindow.postMessage === 'function' ) {
 					el.contentWindow.postMessage( '{"event":"command","func":"pauseVideo","args":""}', '*' );
+				}
+			});
+
+			// Vimeo embeds
+			toArray( slide.querySelectorAll( 'iframe[src*="player.vimeo.com/"]' ) ).forEach( function( el ) {
+				if( !el.hasAttribute( 'data-ignore' ) && typeof el.contentWindow.postMessage === 'function' ) {
+					el.contentWindow.postMessage( '{"method":"pause"}', '*' );
 				}
 			});
 		}
