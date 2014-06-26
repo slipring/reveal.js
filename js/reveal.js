@@ -511,7 +511,7 @@
 		injectStyleSheet( '@page{size:'+ pageWidth +'px '+ pageHeight +'px; margin: 0;}' );
 
 		// Limit the size of certain elements to the dimensions of the slide
-		injectStyleSheet( '.reveal img, .reveal video, .reveal iframe{max-width: '+ slideWidth +'px; max-height:'+ slideHeight +'px}' );
+		injectStyleSheet( '.reveal section>img, .reveal section>video, .reveal section>iframe{max-width: '+ slideWidth +'px; max-height:'+ slideHeight +'px}' );
 
 		document.body.classList.add( 'print-pdf' );
 		document.body.style.width = pageWidth + 'px';
@@ -1921,7 +1921,7 @@
 		}
 
 		// Announce the current slide contents, for screen readers
-		dom.statusDiv.innerHTML = currentSlide.textContent;
+		dom.statusDiv.textContent = currentSlide.textContent;
 
 		updateControls();
 		updateProgress();
@@ -2149,7 +2149,7 @@
 			distanceX,
 			distanceY;
 
-		if( horizontalSlidesLength ) {
+		if( horizontalSlidesLength && typeof indexh !== 'undefined' ) {
 
 			// The number of steps away from the present slide that will
 			// be visible
@@ -2172,7 +2172,7 @@
 					verticalSlidesLength = verticalSlides.length;
 
 				// Loops so that it measures 1 between the first and last slides
-				distanceX = Math.abs( ( indexh - x ) % ( horizontalSlidesLength - viewDistance ) ) || 0;
+				distanceX = Math.abs( ( ( indexh || 0 ) - x ) % ( horizontalSlidesLength - viewDistance ) ) || 0;
 
 				// Show the horizontal slide if it's within the view distance
 				if( distanceX < viewDistance ) {
@@ -2189,7 +2189,7 @@
 					for( var y = 0; y < verticalSlidesLength; y++ ) {
 						var verticalSlide = verticalSlides[y];
 
-						distanceY = x === indexh ? Math.abs( indexv - y ) : Math.abs( y - oy );
+						distanceY = x === ( indexh || 0 ) ? Math.abs( ( indexv || 0 ) - y ) : Math.abs( y - oy );
 
 						if( distanceX + distanceY < viewDistance ) {
 							showSlide( verticalSlide );
@@ -2626,7 +2626,7 @@
 	 */
 	function stopEmbeddedContent( slide ) {
 
-		if( slide ) {
+		if( slide && slide.parentNode ) {
 			// HTML5 media elements
 			toArray( slide.querySelectorAll( 'video, audio' ) ).forEach( function( el ) {
 				if( !el.hasAttribute( 'data-ignore' ) ) {
