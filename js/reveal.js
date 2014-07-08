@@ -3813,7 +3813,8 @@
 	function Playback( container, progressCheck ) {
 
 		// Cosmetics
-		this.diameter = 50;
+		// this.diameter = 50;
+		this.diameter = 36;
 		this.thickness = 3;
 
 		// Flags if we are currently playing
