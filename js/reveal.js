@@ -1295,7 +1295,8 @@
 			dom.overlay.classList.add( 'overlay-help' );
 			dom.wrapper.appendChild( dom.overlay );
 
-			var html = '<p class="title">Keyboard Shortcuts</p><br/>';
+			// var html = '<p class="title">Keyboard Shortcuts</p><br/>';
+			var html = '';
 
 			html += '<table><th>KEY</th><th>ACTION</th>';
 			for( var key in keyboardShortcuts ) {
@@ -3813,8 +3814,8 @@
 	function Playback( container, progressCheck ) {
 
 		// Cosmetics
-		// this.diameter = 50;
-		this.diameter = 36;
+		this.diameter = 50;
+		// this.diameter = 36;
 		this.thickness = 3;
 
 		// Flags if we are currently playing
