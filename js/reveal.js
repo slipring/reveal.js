@@ -207,17 +207,16 @@
 
 		// Holds information about the keyboard shortcuts
 		keyboardShortcuts = {
-			'N  ,  SPACE':			'Next slide',
-			'P':					'Previous slide',
-			'&#8592;  ,  H':		'Navigate left',
-			'&#8594;  ,  L':		'Navigate right',
-			'&#8593;  ,  K':		'Navigate up',
-			'&#8595;  ,  J':		'Navigate down',
-			'Home':					'First slide',
-			'End':					'Last slide',
-			'B  ,  .':				'Pause',
-			'F':					'Fullscreen',
-			'ESC, O':				'Slide overview'
+			'?':					'keyboard shortcuts',
+			'N  ,  SPACE &nbsp;&nbsp;~&nbsp;&nbsp; P':			'next slide &nbsp;&nbsp;~&nbsp;&nbsp; Previous slide',
+			'&#8592;  ,  H &nbsp;&nbsp;|&nbsp;&nbsp; L  ,  &#8594;':	'navigate left &nbsp;&nbsp;|&nbsp;&nbsp; right',
+			'&#8595;  ,  J &nbsp;&mdash;&nbsp; K  , &#8593;':	'navigate down &nbsp;&mdash;&nbsp; up',
+			'Home &nbsp;::&nbsp; End':	'first slide &nbsp;::&nbsp; last slide',
+			'A &nbsp;&#47;&nbsp; B , .':	'autoslide &nbsp;&#47;&nbsp; pause',
+			'F &nbsp;&#92;&nbsp; S':					'fullscreen &nbsp;&#92;&nbsp; speaker view',
+			'ESC, O':				'slide overview',
+			'R':					'record audio',
+			'Z':					'download audio.zip'
 		};
 
 	/**
@@ -4005,6 +4004,9 @@
 
 		// Toggles the overview mode on/off
 		toggleOverview: toggleOverview,
+
+		// Shows the help
+		showHelp: showHelp,
 
 		// Toggles the "black screen" mode on/off
 		togglePause: togglePause,
